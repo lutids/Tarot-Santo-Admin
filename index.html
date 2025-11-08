@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administração - Tarot Santo</title>
+    <link rel="stylesheet" href="estilo.css">
+    <style>
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: #1a1a1a;
+        }
+
+        .admin-table th {
+            background: #000;
+            color: goldenrod;
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #333;
+        }
+
+        .admin-table td {
+            padding: 10px;
+            border: 1px solid #333;
+            color: #f1f1f1;
+        }
+
+        .admin-table tr:hover {
+            background: #2a2a2a;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .status-pendente {
+            background: #ffa500;
+            color: #000;
+        }
+
+        .status-confirmado {
+            background: #32cd32;
+            color: #000;
+        }
+
+        .status-cancelado {
+            background: #dc143c;
+            color: #fff;
+        }
+
+        .btn-action {
+            padding: 6px 12px;
+            margin: 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .btn-confirmar {
+            background: #32cd32;
+            color: #000;
+        }
+
+        .btn-cancelar {
+            background: #dc143c;
+            color: #fff;
+        }
+
+        .btn-excluir {
+            background: #666;
+            color: #fff;
+        }
+
+        .btn-action:hover {
+            opacity: 0.8;
+        }
+
+        .filter-section {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .filter-section label {
+            color: goldenrod;
+            margin-right: 10px;
+        }
+
+        .filter-section select,
+        .filter-section input {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background: #2b2b2b;
+            color: #f1f1f1;
+            margin-right: 15px;
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 5px;
+            border-left: 4px solid goldenrod;
+        }
+
+        .stat-card h3 {
+            color: goldenrod;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .stat-number {
+            font-size: 2em;
+            color: #f1f1f1;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            color: goldenrod;
+            padding: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Tarot Santo</h1>
+    </header>
+
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="leituras.html">Escolha sua leitura</a>
+        <a href="agendamento.html">Agende sua consulta</a>
+        <a href="pagamentos.html">Formas de pagamento</a>
+        <a href="feedbacks.html">Feedbacks</a>
+        <a href="contato.html">Contato</a>
+    </nav>
+
+    <div class="container">
+        <aside class="sidebar">
+            <h2>Menu Admin</h2>
+            <ul>
+                <li><a href="#" onclick="loadAgendamentos(); return false;">Todos Agendamentos</a></li>
+                <li><a href="#" onclick="filterByStatus('Pendente'); return false;">Pendentes</a></li>
+                <li><a href="#" onclick="filterByStatus('Confirmado'); return false;">Confirmados</a></li>
+                <li><a href="#" onclick="filterByStatus('Cancelado'); return false;">Cancelados</a></li>
+            </ul>
+        </aside>
+
+        <section class="content">
+            <h2>Painel Administrativo - Agendamentos</h2>
+
+            <div class="stats-container">
+                <div class="stat-card">
+                    <h3>Total de Agendamentos</h3>
+                    <div class="stat-number" id="statTotal">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Pendentes</h3>
+                    <div class="stat-number" id="statPendente">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Confirmados</h3>
+                    <div class="stat-number" id="statConfirmado">0</div>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <label for="filterData">Data:</label>
+                <input type="date" id="filterData" onchange="applyFilters()">
+
+                <label for="filterLeitura">Tipo de Leitura:</label>
+                <select id="filterLeitura" onchange="applyFilters()">
+                    <option value="">Todas</option>
+                    <option value="Cruz Celta">Cruz Celta</option>
+                    <option value="Perguntas Objetivas">Perguntas Objetivas</option>
+                    <option value="Tarot Sim ou Não">Tarot Sim ou Não</option>
+                    <option value="3 Cartas (Passado, Presente e Futuro)">3 Cartas</option>
+                    <option value="Templo de Afrodite">Templo de Afrodite</option>
+                </select>
+
+                <button class="btn-action btn-confirmar" onclick="loadAgendamentos()">Atualizar</button>
+            </div>
+
+            <div id="loadingMessage" class="loading">Carregando agendamentos...</div>
+
+            <div id="tableContainer"></div>
+        </section>
+    </div>
+
+    <footer>
+        2019 <a href="index.html">Tarot Santo</a> - Todos os direitos reservados.
+    </footer>
+
+    <script>
+        // Armazena todos os agendamentos
+        let todosAgendamentos = [];
+        let agendamentosFiltrados = [];
+
+        // Carrega agendamentos ao abrir a página
+        window.onload = function() {
+            loadAgendamentos();
+        };
+
+        function loadAgendamentos() {
+            document.getElementById('loadingMessage').style.display = 'block';
+            document.getElementById('tableContainer').innerHTML = '';
+
+            // URL do Google Apps Script para buscar dados
+            fetch('https://script.google.com/macros/s/AKfycbxWzn0rThE_F6OCZcglWA8ZSxJaypgoFXNACDYC1lBt5E2keGE31IsNF9TtZge4S_lzjA/exec?action=getAgendamentos')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('loadingMessage').style.display = 'none';
+                    
+                    if (data.agendamentos && data.agendamentos.length > 0) {
+                        todosAgendamentos = data.agendamentos;
+                        agendamentosFiltrados = [...todosAgendamentos];
+                        updateStats();
+                        renderTable(agendamentosFiltrados);
+                    } else {
+                        document.getElementById('tableContainer').innerHTML = 
+                            '<div class="empty-state">Nenhum agendamento encontrado.</div>';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('loadingMessage').style.display = 'none';
+                    console.error('Erro ao carregar agendamentos:', error);
+                    document.getElementById('tableContainer').innerHTML = 
+                        '<div class="empty-state">Erro ao carregar agendamentos. Tente novamente.</div>';
+                });
+        }
+
+        function renderTable(agendamentos) {
+            if (agendamentos.length === 0) {
+                document.getElementById('tableContainer').innerHTML = 
+                    '<div class="empty-state">Nenhum agendamento encontrado com os filtros aplicados.</div>';
+                return;
+            }
+
+            let html = '<table class="admin-table">';
+            html += '<thead><tr>';
+            html += '<th>ID</th>';
+            html += '<th>Nome</th>';
+            html += '<th>E-mail</th>';
+            html += '<th>Tipo de Leitura</th>';
+            html += '<th>Data</th>';
+            html += '<th>Horário</th>';
+            html += '<th>Status</th>';
+            html += '<th>Ações</th>';
+            html += '</tr></thead><tbody>';
+
+            agendamentos.forEach(agendamento => {
+                const statusClass = 'status-' + agendamento.status.toLowerCase();
+                html += '<tr>';
+                html += `<td>${agendamento.id}</td>`;
+                html += `<td>${agendamento.nome}</td>`;
+                html += `<td>${agendamento.email}</td>`;
+                html += `<td>${agendamento.leitura_id}</td>`;
+                html += `<td>${formatDate(agendamento.data_consulta)}</td>`;
+                html += `<td>${agendamento.horario}</td>`;
+                html += `<td><span class="status-badge ${statusClass}">${agendamento.status}</span></td>`;
+                html += '<td>';
+                
+                if (agendamento.status === 'Pendente') {
+                    html += `<button class="btn-action btn-confirmar" onclick="updateStatus(${agendamento.id}, 'Confirmado')">Confirmar</button>`;
+                    html += `<button class="btn-action btn-cancelar" onclick="updateStatus(${agendamento.id}, 'Cancelado')">Cancelar</button>`;
+                } else if (agendamento.status === 'Confirmado') {
+                    html += `<button class="btn-action btn-cancelar" onclick="updateStatus(${agendamento.id}, 'Cancelado')">Cancelar</button>`;
+                } else {
+                    html += `<button class="btn-action btn-confirmar" onclick="updateStatus(${agendamento.id}, 'Pendente')">Reativar</button>`;
+                }
+                
+                html += `<button class="btn-action btn-excluir" onclick="deleteAgendamento(${agendamento.id})">Excluir</button>`;
+                html += '</td>';
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('tableContainer').innerHTML = html;
+        }
+
+        function updateStats() {
+            const total = todosAgendamentos.length;
+            const pendentes = todosAgendamentos.filter(a => a.status === 'Pendente').length;
+            const confirmados = todosAgendamentos.filter(a => a.status === 'Confirmado').length;
+
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statPendente').textContent = pendentes;
+            document.getElementById('statConfirmado').textContent = confirmados;
+        }
+
+        function updateStatus(id, novoStatus) {
+            if (!confirm(`Deseja alterar o status para "${novoStatus}"?`)) {
+                return;
+            }
+
+            fetch('https://script.google.com/macros/s/AKfycbxWzn0rThE_F6OCZcglWA8ZSxJaypgoFXNACDYC1lBt5E2keGE31IsNF9TtZge4S_lzjA/exec', {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'updateStatus',
+                    id: id,
+                    status: novoStatus
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Status atualizado com sucesso!');
+                    loadAgendamentos();
+                } else {
+                    alert('Erro ao atualizar status.');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao atualizar status.');
+            });
+        }
+
+        function deleteAgendamento(id) {
+            if (!confirm('Tem certeza que deseja excluir este agendamento?')) {
+                return;
+            }
+
+            fetch('https://script.google.com/macros/s/AKfycbxWzn0rThE_F6OCZcglWA8ZSxJaypgoFXNACDYC1lBt5E2keGE31IsNF9TtZge4S_lzjA/exec', {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'deleteAgendamento',
+                    id: id
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Agendamento excluído com sucesso!');
+                    loadAgendamentos();
+                } else {
+                    alert('Erro ao excluir agendamento.');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao excluir agendamento.');
+            });
+        }
+
+        function filterByStatus(status) {
+            agendamentosFiltrados = todosAgendamentos.filter(a => a.status === status);
+            renderTable(agendamentosFiltrados);
+        }
+
+        function applyFilters() {
+            const filterData = document.getElementById('filterData').value;
+            const filterLeitura = document.getElementById('filterLeitura').value;
+
+            agendamentosFiltrados = todosAgendamentos.filter(agendamento => {
+                let matches = true;
+
+                if (filterData && agendamento.data_consulta !== filterData) {
+                    matches = false;
+                }
+
+                if (filterLeitura && agendamento.leitura_id !== filterLeitura) {
+                    matches = false;
+                }
+
+                return matches;
+            });
+
+            renderTable(agendamentosFiltrados);
+        }
+
+        function formatDate(dateString) {
+            const parts = dateString.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+            return dateString;
+        }
+    </script>
+
+</body>
+</html>
